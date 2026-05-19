@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 1. Primitives
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+
+    // 2. Validation Blueprints
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'updatedAt'])
+        && data.email is string
+        && data.updatedAt is timestamp
+        && (data.get('displayName', null) == null || data.displayName is string)
+        && (data.get('photoURL', null) == null || data.photoURL is string)
+        && (data.get('vitals', null) == null || data.vitals is map);
+    }
+
+    function isValidHistory(data) {
+      return data.keys().hasAll(['userId', 'type', 'data', 'vitals', 'timestamp', 'createdAt'])
+        && data.userId == request.auth.uid
+        && data.type in ['Report', 'Prediction']
+        && data.data is map
+        && data.vitals is map
+        && data.timestamp is number
+        && data.createdAt is timestamp;
+    }
+
+    // 3. Match Blocks
+    match /users/{userId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'vitals', 'updatedAt', 'email']);
+    }
+
+    match /users/{userId}/history/{historyId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidHistory(incoming()) && isValidId(historyId);
+      allow delete: if isOwner(userId);
+      // History records are immutable
+      allow update: if false;
+    }
+  }
+}

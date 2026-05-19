@@ -1,0 +1,6 @@
+{
+  "name": "HealAI",
+  "description": "AI-powered medical report analyzer and healthcare dashboard with symptom prediction, health history tracking, and personalized wellness recommendations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

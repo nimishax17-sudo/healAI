@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile data and current vital signs.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "description": "User's email address." },
+        "displayName": { "type": "string", "description": "User's display name." },
+        "photoURL": { "type": "string", "description": "Link to user profile picture." },
+        "vitals": {
+          "type": "object",
+          "description": "Current snapshot of health vital signs.",
+          "properties": {
+            "bp": { "type": "string" },
+            "pulse": { "type": "string" },
+            "oxygen": { "type": "string" },
+            "sleep": { "type": "string" }
+          }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "updatedAt"]
+    },
+    "MedicalHistoryEntry": {
+      "title": "Medical History Entry",
+      "description": "A record of an AI analysis (Report) or symptom prediction (Prediction).",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the owner." },
+        "type": { "type": "string", "enum": ["Report", "Prediction"] },
+        "data": { "type": "object", "description": "The raw data from the AI analysis." },
+        "vitals": { "type": "object", "description": "Vitals at the time of the event." },
+        "timestamp": { "type": "number", "description": "Epoch timestamp." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "data", "vitals", "timestamp", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents."
+    },
+    "/users/{userId}/history/{historyId}": {
+      "schema": "MedicalHistoryEntry",
+      "description": "Individual medical records for a user."
+    }
+  }
+}
