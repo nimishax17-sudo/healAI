@@ -10,8 +10,7 @@ import {
   Activity,
   User,
   ShieldAlert,
-  Download,
-  LogOut
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useHealthStorage } from './hooks/useHealthStorage';
@@ -19,16 +18,12 @@ import VitalsCard from './components/VitalsCard';
 import Analyzer from './components/Analyzer';
 import SymptomChecker from './components/SymptomChecker';
 import History from './components/History';
-import Auth from './components/Auth';
 import EmergencyAlert from './components/EmergencyAlert';
 import { AnalysisResult, PredictionResult } from './types';
-import { auth, onAuthStateChanged, FirebaseUser, signOut } from './lib/firebase';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 
 export default function App() {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analyzer' | 'symptoms' | 'history'>('dashboard');
   const [isDark, setIsDark] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
@@ -36,15 +31,7 @@ export default function App() {
   const [isDownloading, setIsDownloading] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   
-  const { history, vitals, saveEntry, updateVitals, clearHistory, loading: syncLoading } = useHealthStorage(user?.uid || null);
-
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setAuthLoading(false);
-    });
-    return () => unsub();
-  }, []);
+  const { history, vitals, saveEntry, updateVitals, clearHistory, loading: syncLoading } = useHealthStorage();
 
   useEffect(() => {
     if (isDark) {
@@ -103,8 +90,8 @@ export default function App() {
       doc.setTextColor(40, 40, 40);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(`Patient: Nimisha`, 20, 55);
-      doc.text(`Identifier: HEAL-X92`, 20, 60);
+      doc.text(`Patient: Authorized User`, 20, 55);
+      doc.text(`Identifier: HEAL-LOCAL`, 20, 60);
       doc.setFont("helvetica", "normal");
       doc.text(`Log Sequence: ${format(latest.timestamp, 'PPP p')}`, pageWidth - 90, 55);
       
@@ -209,16 +196,8 @@ export default function App() {
         message={alertMessage} 
       />
 
-      {authLoading ? (
-        <div className="min-h-screen bg-[#020617] flex items-center justify-center">
-          <Activity className="w-10 h-10 text-cyan-500 animate-pulse" />
-        </div>
-      ) : !user ? (
-        <Auth />
-      ) : (
-        <>
-          {/* Sidebar Navigation */}
-          <nav className="fixed bottom-0 left-0 right-0 lg:left-0 lg:top-0 lg:bottom-0 lg:w-72 bg-[#0B0F1A] border-t lg:border-t-0 lg:border-r border-slate-800 z-40 transition-all">
+      {/* Sidebar Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 lg:left-0 lg:top-0 lg:bottom-0 lg:w-72 bg-[#0B0F1A] border-t lg:border-t-0 lg:border-r border-slate-800 z-40 transition-all">
         <div className="p-8 hidden lg:flex items-center gap-3">
           <div className="bg-cyan-500 p-2.5 rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.4)]">
             <HeartPulse className="w-6 h-6 text-white" />
@@ -250,35 +229,6 @@ export default function App() {
             </button>
           ))}
         </div>
-
-        {/* User Status / Logout */}
-        <div className="absolute bottom-10 left-6 right-6 hidden lg:block">
-          <div className="p-6 bg-slate-900/40 rounded-[2rem] border border-slate-800/60 backdrop-blur-md shadow-xl group/logout">
-             <div className="flex items-center gap-3 mb-5 px-1">
-               <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-800 border-2 border-slate-700 shadow-inner">
-                  {user?.photoURL ? (
-                    <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-cyan-500/10">
-                      <User className="w-5 h-5 text-cyan-400" />
-                    </div>
-                  )}
-               </div>
-               <div className="overflow-hidden">
-                 <p className="text-xs text-white font-black uppercase truncate tracking-tight">{user?.displayName || 'User'}</p>
-                 <p className="text-[9px] text-slate-500 font-bold truncate tracking-[0.1em]">{user?.email}</p>
-               </div>
-             </div>
-             <button 
-               onClick={() => signOut(auth)}
-               className="w-full py-3 bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-700/50 hover:border-rose-500/30 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 group"
-             >
-               <LogOut className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
-               Log Out
-             </button>
-          </div>
-        </div>
-
       </nav>
 
       {/* Main Content Area */}
@@ -287,11 +237,11 @@ export default function App() {
         <header className="flex items-center justify-between h-20 border-b border-slate-800/50 mb-10 sticky top-0 bg-[#020617]/80 backdrop-blur-md z-30 px-2 lg:-mx-6 lg:px-8">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-3">
-              {user?.displayName || 'Authorized User'} <span className="text-slate-500 text-xs font-normal italic ml-2">UID: {user?.uid.slice(0, 6)}...</span>
+              HealAI Engine <span className="text-slate-500 text-xs font-normal italic ml-2">VERSION: 4.0.0-LOCAL</span>
             </h2>
             <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
-              Core Vitals Stable • {syncLoading ? 'Syncing...' : 'Encrypted Link Active'}
+              Core Vitals Stable • {syncLoading ? 'Initializing...' : 'Local Sandbox Active'}
             </p>
           </div>
           <div className="flex items-center gap-6">
@@ -308,11 +258,7 @@ export default function App() {
               {isDownloading ? 'Generating...' : 'Download PDF Summary'}
             </button>
             <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
-               {user?.photoURL ? (
-                 <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
-               ) : (
-                 <User className="w-6 h-6 text-slate-400" />
-               )}
+               <User className="w-6 h-6 text-slate-400" />
             </div>
           </div>
         </header>
@@ -438,8 +384,6 @@ export default function App() {
         <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
         <span className="text-[10px] text-slate-400 tracking-tight font-bold uppercase tracking-widest">Diagnostic Engine Online</span>
       </div>
-        </>
-      )}
     </div>
   );
 }
